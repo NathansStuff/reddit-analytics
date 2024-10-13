@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-let mockSubreddits = [
+const mockSubreddits = [
   { id: '1', name: 'ollama', description: 'Discussions about Ollama', subscribers: 10000 },
   { id: '2', name: 'openai', description: 'All things OpenAI', subscribers: 50000 },
 ];
@@ -11,7 +11,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const { url } = body;
+    const { url } = body;
+    try {
 
   // In a real application, you would parse the URL, fetch subreddit info, and save to database
   const newSubreddit = {
@@ -23,5 +24,9 @@ export async function POST(request: Request) {
 
   mockSubreddits.push(newSubreddit);
 
-  return NextResponse.json(newSubreddit, { status: 201 });
+    return NextResponse.json(newSubreddit, { status: 201 });
+  } catch (error) {
+    console.error('Error adding subreddit:', error);
+    return NextResponse.json({ error: 'Failed to add subreddit' }, { status: 500 });
+  }
 }

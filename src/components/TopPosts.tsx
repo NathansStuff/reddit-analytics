@@ -63,48 +63,132 @@ export default function TopPosts({ subredditName }: { subredditName: string }) {
   };
 
   if (isLoading) {
-    return <div>Loading posts...</div>;
+    return (
+      <div className='text-center py-8 text-gray-600'>Loading posts...</div>
+    );
   }
 
   if (error) {
-    return <div className="text-red-500">{error}</div>;
+    return <div className='text-red-500 text-center py-8'>{error}</div>;
   }
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold mb-4">Top Posts for r/{subredditName}</h2>
-      <table className="w-full border-collapse">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="p-2 text-left cursor-pointer" onClick={() => toggleSort('title')}>
-              Title {sortKey === 'title' && (sortDirection === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />)}
-            </th>
-            <th className="p-2 text-left cursor-pointer" onClick={() => toggleSort('score')}>
-              Score {sortKey === 'score' && (sortDirection === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />)}
-            </th>
-            <th className="p-2 text-left cursor-pointer" onClick={() => toggleSort('numComments')}>
-              Comments {sortKey === 'numComments' && (sortDirection === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />)}
-            </th>
-            <th className="p-2 text-left cursor-pointer" onClick={() => toggleSort('createdAt')}>
-              Posted {sortKey === 'createdAt' && (sortDirection === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />)}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {sortedPosts.map((post) => (
-            <tr key={post.id} className="border-b">
-              <td className="p-2">
-                <a href={post.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
-                  {post.title}
-                </a>
-              </td>
-              <td className="p-2">{post.score}</td>
-              <td className="p-2">{post.numComments}</td>
-              <td className="p-2">{formatDistanceToNow(post.createdAt)} ago</td>
+      <h2 className='text-2xl font-semibold mb-6 text-gray-800'>
+        Top Posts for r/{subredditName}
+      </h2>
+      <div className='overflow-x-auto'>
+        <table className='w-full border-collapse'>
+          <thead>
+            <tr className='bg-gray-100'>
+              <th
+                className='p-3 text-left cursor-pointer'
+                onClick={() => toggleSort('title')}
+              >
+                <div className='flex items-center'>
+                  Title
+                  {sortKey === 'title' &&
+                    (sortDirection === 'asc' ? (
+                      <ArrowUp
+                        size={16}
+                        className='ml-1'
+                      />
+                    ) : (
+                      <ArrowDown
+                        size={16}
+                        className='ml-1'
+                      />
+                    ))}
+                </div>
+              </th>
+              <th
+                className='p-3 text-left cursor-pointer'
+                onClick={() => toggleSort('score')}
+              >
+                <div className='flex items-center'>
+                  Score
+                  {sortKey === 'score' &&
+                    (sortDirection === 'asc' ? (
+                      <ArrowUp
+                        size={16}
+                        className='ml-1'
+                      />
+                    ) : (
+                      <ArrowDown
+                        size={16}
+                        className='ml-1'
+                      />
+                    ))}
+                </div>
+              </th>
+              <th
+                className='p-3 text-left cursor-pointer'
+                onClick={() => toggleSort('numComments')}
+              >
+                <div className='flex items-center'>
+                  Comments
+                  {sortKey === 'numComments' &&
+                    (sortDirection === 'asc' ? (
+                      <ArrowUp
+                        size={16}
+                        className='ml-1'
+                      />
+                    ) : (
+                      <ArrowDown
+                        size={16}
+                        className='ml-1'
+                      />
+                    ))}
+                </div>
+              </th>
+              <th
+                className='p-3 text-left cursor-pointer'
+                onClick={() => toggleSort('createdAt')}
+              >
+                <div className='flex items-center'>
+                  Posted
+                  {sortKey === 'createdAt' &&
+                    (sortDirection === 'asc' ? (
+                      <ArrowUp
+                        size={16}
+                        className='ml-1'
+                      />
+                    ) : (
+                      <ArrowDown
+                        size={16}
+                        className='ml-1'
+                      />
+                    ))}
+                </div>
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {sortedPosts.map(post => (
+              <tr
+                key={post.id}
+                className='border-b hover:bg-gray-50'
+              >
+                <td className='p-3'>
+                  <a
+                    href={post.url}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='text-indigo-600 hover:underline'
+                  >
+                    {post.title}
+                  </a>
+                </td>
+                <td className='p-3'>{post.score}</td>
+                <td className='p-3'>{post.numComments}</td>
+                <td className='p-3'>
+                  {formatDistanceToNow(post.createdAt)} ago
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

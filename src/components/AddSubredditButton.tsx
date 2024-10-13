@@ -11,12 +11,18 @@ export default function AddSubredditButton() {
     <>
       <button
         onClick={() => setIsModalOpen(true)}
-        className="flex items-center justify-center bg-blue-500 text-white rounded-full p-2 hover:bg-blue-600 transition-colors"
+        className='inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200'
       >
-        <Plus size={24} />
-        <span className="ml-2">Add Subreddit</span>
+        <Plus
+          size={20}
+          className='mr-2'
+        />
+        Add Subreddit
       </button>
-      <AddSubredditModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <AddSubredditModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </>
   );
 }
