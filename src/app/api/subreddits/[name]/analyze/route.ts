@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import Snoowrap from 'snoowrap';
 import { z } from 'zod';
+import clientPromise, { getDatabase } from '@/lib/mongodb';
 
 const openai = new OpenAI({
   baseURL: 'https://oai.helicone.ai/v1',
@@ -68,30 +69,50 @@ export async function GET(
   { params }: { params: { name: string } }
 ) {
   try {
-    const subreddit = await reddit.getSubreddit(params.name);
-    const posts = await subreddit.getNew({ limit: 10 }); // Limit to 10 posts for demo purposes
+    // Ensure the MongoDB connection is established
+    await clientPromise;
+    const db = await getDatabase();
+    const subredditName = params.name;
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-    const analyzePosts = posts.map(async (post: any) => {
-      try {
-        const analysis = await categorizePost(post.title, post.selftext);
-        return {
-          id: post.id,
-          title: post.title,
-          content: post.selftext,
-          url: post.url,
-          createdAt: post.created_utc * 1000,
-          analysis,
-        };
-      } catch (error) {
-        console.error(`Error analyzing post ${post.id}:`, error);
-        return null;
+    let analyzedPosts = await db.collection('analyzedPosts').find({
+      subredditName,
+      analyzedAt: { $gte: twentyFourHoursAgo }
+    }).sort({ createdAt: -1 }).toArray();
+
+    if (analyzedPosts.length === 0) {
+      const subreddit = await (reddit.getSubreddit(subredditName) as Promise<Snoowrap.Subreddit>);
+      const posts = await subreddit.getNew({ limit: 10 }); // Limit to 10 posts for demo purposes
+
+      const newAnalyzedPosts = await Promise.all(posts.map(async (post) => {
+        try {
+          const analysis = await categorizePost(post.title, post.selftext);
+          return {
+            id: post.id,
+            subredditName,
+            title: post.title,
+            content: post.selftext,
+            url: post.url,
+            createdAt: new Date(post.created_utc * 1000),
+            analyzedAt: new Date(),
+            analysis,
+          };
+        } catch (error) {
+          console.error(`Error analyzing post ${post.id}:`, error);
+          return null;
+        }
+      }));
+
+      const validNewPosts = newAnalyzedPosts.filter((post): post is Exclude<typeof post, null> => post !== null);
+
+      if (validNewPosts.length > 0) {
+        await db.collection('analyzedPosts').insertMany(validNewPosts);
       }
-    });
 
-    const analyzedPosts = await Promise.all(analyzePosts);
-    const validPosts = analyzedPosts.filter((post): post is Exclude<typeof post, null> => post !== null);
+      analyzedPosts = validNewPosts;
+    }
 
-    return NextResponse.json(validPosts);
+    return NextResponse.json(analyzedPosts);
   } catch (error) {
     console.error('Error analyzing subreddit posts:', error);
     return new NextResponse('Error analyzing subreddit posts', { status: 500 });

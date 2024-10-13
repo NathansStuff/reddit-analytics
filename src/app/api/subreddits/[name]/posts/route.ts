@@ -1,37 +1,37 @@
 import { NextResponse } from 'next/server';
-import Snoowrap from 'snoowrap';
-
-const reddit = new Snoowrap({
-  userAgent: 'MyRedditApp:1.0 (by /u/YourUsername)',
-  clientId: process.env.REDDIT_CLIENT_ID,
-  clientSecret: process.env.REDDIT_CLIENT_SECRET,
-  refreshToken: process.env.REDDIT_REFRESH_TOKEN,
-});
+import clientPromise, { getDatabase } from '@/lib/mongodb';
+import { fetchRedditPosts } from '@/lib/dataFetcher';
 
 export async function GET(
   request: Request,
   { params }: { params: { name: string } }
 ) {
   try {
-    const subreddit = await reddit.getSubreddit(params.name);
-    const posts = await subreddit.getTop({time: 'day', limit: 100});
+    // Ensure the MongoDB connection is established
+    await clientPromise;
+    const db = await getDatabase();
+    const subredditName = params.name;
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-    const recentPosts = posts.map((post: any) => ({
-      id: post.id,
-      title: post.title,
-      score: post.score,
-      content: post.selftext,
-      url: post.url,
-      createdAt: post.created_utc * 1000,
-      numComments: post.num_comments,
-    }));
+    let posts = await db.collection('posts').find({
+      subredditName,
+      createdAt: { $gte: twentyFourHoursAgo }
+    }).sort({ score: -1 }).toArray();
 
-    // Sort posts by score in descending order
-    recentPosts.sort((a, b) => b.score - a.score);
+    if (posts.length === 0) {
+      // Fetch new posts from Reddit API
+      const redditPosts = await fetchRedditPosts(subredditName);
+      const insertResult = await db.collection('posts').insertMany(redditPosts);
 
-    return NextResponse.json(recentPosts);
+      // Fetch the newly inserted posts
+      posts = await db.collection('posts').find({
+        _id: { $in: Object.values(insertResult.insertedIds) }
+      }).toArray();
+    }
+
+    return NextResponse.json(posts);
   } catch (error) {
-    console.error('Error fetching subreddit posts:', error);
-    return new NextResponse('Error fetching subreddit posts', { status: 500 });
+    console.error('Error fetching posts:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
