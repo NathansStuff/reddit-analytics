@@ -26,8 +26,3 @@ export async function fetchRedditPosts(subredditName: string) {
       createdAt: new Date(post.created_utc * 1000),
     }));
 }
-
-export async function analyzePost(post: any) {
-  const analysis = await categorizePost(post.title, post.content);
-  return { ...post, analysis };
-}

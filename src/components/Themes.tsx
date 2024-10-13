@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { X, Plus } from 'lucide-react';
+import { useThemes } from '@/hooks/useThemes';
 
 interface AnalyzedPost {
   id: string;
@@ -23,9 +24,7 @@ interface Category {
 }
 
 export default function Themes({ subredditName }: { subredditName: string }) {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: categories, isLoading, error } = useThemes(subredditName);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
     null
   );
@@ -34,64 +33,8 @@ export default function Themes({ subredditName }: { subredditName: string }) {
   const [newCategoryKey, setNewCategoryKey] = useState('');
   const [newCategoryDescription, setNewCategoryDescription] = useState('');
 
-  useEffect(() => {
-    fetchAnalyzedPosts();
-  }, [subredditName]);
-
-  const fetchAnalyzedPosts = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch(`/api/subreddits/${subredditName}/analyze`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch analyzed posts');
-      }
-      const data: AnalyzedPost[] = await response.json();
-
-      const initialCategories: Category[] = [
-        {
-          name: 'Solution Requests',
-          key: 'solutionRequests',
-          description: 'Posts where people are seeking solutions for problems',
-          posts: [],
-        },
-        {
-          name: 'Pain and Anger',
-          key: 'painAndAnger',
-          description: 'Posts where people are expressing their pain and anger',
-          posts: [],
-        },
-        {
-          name: 'Advice Requests',
-          key: 'adviceRequests',
-          description: 'Posts where people are seeking advice',
-          posts: [],
-        },
-        {
-          name: 'Money Talk',
-          key: 'moneyTalk',
-          description: 'Posts where people are talking about spending money',
-          posts: [],
-        },
-      ];
-
-      const categorizedPosts = categorizePosts(data, initialCategories);
-      setCategories(categorizedPosts);
-    } catch (err) {
-      setError('Error fetching analyzed posts. Please try again later.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const categorizePosts = (
-    posts: AnalyzedPost[],
-    categories: Category[]
-  ): Category[] => {
-    return categories.map(category => ({
-      ...category,
-      posts: posts.filter(post => post.analysis[category.key]),
-    }));
-  };
+  if (isLoading) return <div>Loading themes...</div>;
+  if (error) return <div>Error loading themes: {(error as Error).message}</div>;
 
   const handleAddCategory = async () => {
     if (!newCategoryName || !newCategoryKey || !newCategoryDescription) return;
@@ -104,26 +47,14 @@ export default function Themes({ subredditName }: { subredditName: string }) {
     };
 
     try {
-      setCategories([...categories, newCategory]);
-      await fetchAnalyzedPosts();
+      // setCategories([...categories, newCategory]);
+      // await fetchAnalyzedPosts();
       setNewCategoryName('');
       setNewCategoryKey('');
       setNewCategoryDescription('');
       setIsAddingCategory(false);
-    } catch (err) {
-      setError('Failed to add new category. Please try again.');
-    }
+    } catch (err) {}
   };
-
-  if (isLoading) {
-    return (
-      <div className='text-center py-8 text-gray-600'>Analyzing posts...</div>
-    );
-  }
-
-  if (error) {
-    return <div className='text-red-500 text-center py-8'>{error}</div>;
-  }
 
   return (
     <div>
@@ -131,7 +62,7 @@ export default function Themes({ subredditName }: { subredditName: string }) {
         Themes for r/{subredditName}
       </h2>
       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8'>
-        {categories.map(category => (
+        {categories.map((category: Category) => (
           <div
             key={category.name}
             className='bg-white shadow-md rounded-lg p-6 cursor-pointer hover:shadow-lg transition-shadow border border-gray-200'
@@ -142,7 +73,7 @@ export default function Themes({ subredditName }: { subredditName: string }) {
             </h3>
             <p className='text-sm text-gray-600 mb-4'>{category.description}</p>
             <p className='text-sm font-medium text-indigo-600'>
-              {category.posts.length} posts
+              {category.posts?.length} posts
             </p>
           </div>
         ))}
